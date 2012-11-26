@@ -1,5 +1,7 @@
 <?php
 /*
+Version: 2.0.0
+
 Copyright (c) 2012 Gustav Svalander, Göteborg, Sweden
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
@@ -30,7 +32,7 @@ class Vasttrafik {
 
 
 	public function __construct(){
-		echo "This class is not intended to be instantiated. Use VasttrafikApi::systemInfo()";
+		echo "This class is not intended to be instantiated. Use Vasttrafik::systemInfo()";
 	}
 
 	protected static function log($msg){
@@ -52,10 +54,11 @@ class Vasttrafik {
 				)
 			)
 		);
-		//echo "$finalurl\n";
+		//echo "$finalurl\n"; // Great debugging
 		$json=@file_get_contents($finalurl,false,$options);	// surpress error since it's too unpredictable.
 		if($http_response_header[0]!='HTTP/1.1 200 OK' AND $http_response_header[0]!='HTTP/1.0 200 OK'){
 			self::log('Request failed with \"'.$http_response_header[0]."\", retry:$retry, url:".addslashes($finalurl));
+
 			if($retry<self::REQUEST_RETRIES){
 				sleep(self::REQUEST_RETRY_SLEEP);	// Don't hammer
 				return self::request($finalurl, ++$retry);
@@ -87,23 +90,42 @@ class Vasttrafik {
 		return self::request("/location.nearbystops?".http_build_query($query));
 	}
 
-	public static function trip($originId, $destLat, $destLng, $destCoordName, $date, $time, $excludeTrafficMask=0){
+	public static function trip(array $origin, array $dest, $date=null, $time=null, $excludeTrafficMask=0, $searchForArrival=0, $viaId=null, $needGeo=0){
 		$query=array();
-		$query['originId']=$originId;
-		$query['destCoordLat']=$destLat;
-		$query['destCoordLong']=$destLng;
-		$query['destCoordName']=$destCoordName;
-		$query['date']=$date;
-		$query['time']=$time;
+		if(isset($origin['id'])){
+			$query['originId']=$origin['id'];
+		}
+		elseif(isset($origin['lat']) && isset($origin['long']) && isset($origin['name'])){
+			$query['originCoordLat']=$origin['lat'];
+			$query['originCoordLong']=$origin['long'];
+			$query['originCoordName']=$origin['name'];
+		}
+		if(isset($dest['id'])){
+			$query['destId']=$dest['id'];
+		}
+		elseif(isset($dest['lat']) && isset($dest['long']) && isset($dest['name'])){
+			$query['destCoordLat']=$dest['lat'];
+			$query['destCoordLong']=$dest['long'];
+			$query['destCoordName']=$dest['name'];
+		}
+		$query['date']=$date==null?date('Y-m-d'):$date;
+		$query['time']=$time==null?date('H:i'):$time;
 		$query+=self::doNotUseTrafficWithMask($excludeTrafficMask);
+		if($searchForArrival!=0){
+			$query['searchForArrival']='1';
+		}
+		if($viaId!=null){
+			$query['viaId']=$viaId;
+		}
+		$query['needGeo']=$needGeo==true?'1':'0';
 		return self::request("/trip?".http_build_query($query));
 	}
 
-	public static function departureBoard($id, $date, $time, $excludeTrafficMask=0, $timeSpan=null, $maxDeparturesPerLine=2, $needJourneyDetail=0, $direction=null){
+	public static function departureBoard($id, $date=null, $time=null, $excludeTrafficMask=0, $needJourneyDetail=0, $timeSpan=null, $maxDeparturesPerLine=2, $direction=null){
 		$query=array();
 		$query['id']=$id;
-		$query['date']=$date;
-		$query['time']=$time;
+		$query['date']=$date==null?date('Y-m-d'):$date;
+		$query['time']=$time==null?date('H:i'):$time;
 		if($timeSpan!=null){
 			$query['timeSpan']=$timeSpan;
 			$query['maxDeparturesPerLine']=$maxDeparturesPerLine;

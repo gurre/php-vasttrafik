@@ -11,24 +11,28 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 
 /* Just some trivial tests. */
-date_default_timezone_set("Europe/Dublin");
-include "Vasttrafik.php";
+date_default_timezone_set("Europe/Stockholm");
+include "Vasttrafik.2.0.0.php";
 
 $stops=Vasttrafik::locationNearbyStops(11.974624, 57.700570);
-
-
-
+print_r($stops);
 if(isset($stops['LocationList']) && isset($stops['LocationList']['StopLocation']) && count($stops['LocationList']['StopLocation'])>0){
 	echo "[  OK  ] Got ".count($stops['LocationList']['StopLocation'])." near (11.974624, 57.700570). In 2012 there are 10 stops nearby.\n";
 
 	$mask=Vasttrafik::EXCLUDE_BUS|Vasttrafik::EXCLUDE_BOAT;
 	$deptBoard=Vasttrafik::departureBoard($stops['LocationList']['StopLocation'][0]['id'], date('Y-m-d'), date('H:i'), $mask);
-	//print_r($deptBoard);
+	print_r($deptBoard);
 	if(isset($deptBoard['DepartureBoard']) && isset($deptBoard['DepartureBoard']['Departure'])){
 		echo "[  OK  ] Got some departures for ".$stops['LocationList']['StopLocation'][0]['name'].".\n";
 	}
 
-
 }
+
+// Trip suggestion,
+$origin=array('id'=>'9022014008000000');
+$dest=array('id'=>'9021014007220000');
+print_r(Vasttrafik::trip($origin, $dest));
+
+
 print_r(Vasttrafik::systemInfo());
 
