@@ -61,7 +61,7 @@ class Vasttrafik {
 
 			if($retry<self::REQUEST_RETRIES){
 				sleep(self::REQUEST_RETRY_SLEEP);	// Don't hammer
-				return self::request($finalurl, ++$retry);
+				return self::request($pathquery, ++$retry);
 			}
 		}
 		$response=json_decode($json,true);
